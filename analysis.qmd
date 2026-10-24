@@ -1,33 +1,19 @@
 ---
-title: "Analyzing School District Reading Scores"
-author: "Ethan Katz"
 format: html
 execute:
   echo: false
 ---
 
 ```{r}
+#| include: false
+
 con <- DBI::dbConnect(duckdb::duckdb(), "data/seda_2025.duckdb")
-dbplyr_dist <- dplyr::tbl(con, "district_scores")
 ```
 
 ```{r}
+#| include: false
 #| cache: true
 #| cache.extra: !expr file.mtime("data/seda_2025.duckdb")
-
-district_2015 <- dbplyr_dist |>
-  dplyr::filter(year == 2015) |>
-  dplyr::select(district_id, rla_2015 = rla_score)
-
-district_2023 <- dbplyr_dist |>
-  dplyr::filter(year == 2023) |>
-  dplyr::select(district_id, rla_2023 = rla_score)
-
-score_change <- dplyr::inner_join(district_2015, district_2023, by = "district_id") |>
-  dplyr::filter(!is.na(rla_2015), !is.na(rla_2023)) |>
-  dplyr::mutate(rla_change = rla_2023 - rla_2015) |>
-  dplyr::select(district_id, rla_change) |>
-  dplyr::collect()
 
 state_scores <- dplyr::tbl(con, "state_scores")
 state_2015 <- state_scores |>
@@ -42,26 +28,6 @@ state_change <- dplyr::inner_join(state_2015, state_2023, by = "stateabb") |>
   dplyr::filter(!is.na(rla_2015), !is.na(rla_2023)) |>
   dplyr::mutate(rla_change = rla_2023 - rla_2015) |>
   dplyr::collect()
-
-state_change
-```
-
-```{r}
-ggplot2::ggplot(score_change, ggplot2::aes(x = rla_change, fill = rla_change > 0)) +
-  ggplot2::geom_histogram(bins = 30) +
-  ggplot2::geom_vline(xintercept = 0) +
-  ggplot2::scale_fill_manual(
-    values = c("FALSE" = "#4C78A8", "TRUE" = "#F58518"),
-    labels = c("Non-positive", "Positive")
-  ) +
-  ggplot2::labs(
-    title = "District Changes in Reading Scores",
-    subtitle = paste("2015 to 2023 |", nrow(score_change), "districts"),
-    x = "Change in RLA score",
-    y = "Number of districts",
-    fill = "Score change",
-    caption = "Positive values indicate higher RLA scores in 2023 than in 2015."
-  )
 ```
 
 ```{r}
